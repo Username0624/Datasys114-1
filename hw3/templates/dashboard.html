@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>我的表單</title>
+</head>
+<body>
+
+<h2>歡迎，<span id="username"></span></h2>
+
+<h3>我的表單列表</h3>
+
+<ul id="formList"></ul>
+
+<h3>新增表單</h3>
+<input type="text" id="newFormTitle" placeholder="表單名稱">
+<button id="createBtn">新增</button>
+
+<!-- 正確載入 API -->
+<script src="/static/api.js"></script>
+
+<script>
+    const userId = localStorage.getItem("user_id");
+    const usernameText = localStorage.getItem("username");
+    document.getElementById("username").innerText = usernameText;
+
+    async function loadForms(){
+        const forms = await apiGetMyForms(userId);
+        const list = document.getElementById("formList");
+        list.innerHTML = "";
+
+        forms.forEach(f => {
+            const li = document.createElement("li");
+            li.innerHTML = `
+                ${f.title} 
+                <button onclick="openForm('${f._id}')">開啟</button>
+            `;
+            list.appendChild(li);
+        });
+    }
+
+    function openForm(id){
+        localStorage.setItem("form_id", id);
+        location.href = "/form";
+    }
+
+    document.getElementById("createBtn").addEventListener("click", async () => {
+        const title = newFormTitle.value;
+        if(!title) return;
+
+        await apiCreateForm(userId, title);
+        newFormTitle.value = "";
+        loadForms();
+    });
+
+    loadForms();
+</script>
+
+</body>
+</html>

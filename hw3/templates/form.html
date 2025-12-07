@@ -1,0 +1,140 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <title>表單內容</title>
+    <style>
+        td input {
+            width: 90%;
+        }
+    </style>
+</head>
+<body>
+
+<h2>表單內容</h2>
+
+<table border="1" id="tableRows">
+    <tr>
+        <th>買家</th>
+        <th>物品名稱</th>
+        <th>數量</th>
+        <th>金額（台幣）</th>
+        <th>操作</th>
+    </tr>
+</table>
+
+<h3>新增一列</h3>
+買家：<input id="buyer"><br><br>
+物品：<input id="item"><br><br>
+數量：<input id="qty" type="number"><br><br>
+金額：<input id="price" type="number"><br><br>
+
+<button id="addBtn">新增</button>
+<button id="clearBtn">清空所有資料</button>
+
+<script src="/static/api.js"></script>
+
+<script>
+    const formId = localStorage.getItem("form_id");
+
+    // 讀取表單
+    async function loadForm() {
+        const forms = await apiGetMyForms(localStorage.getItem("user_id"));
+        const f = forms.find(x => x._id === formId);
+
+        const table = document.getElementById("tableRows");
+
+        f.rows.forEach((r, index) => {
+            const tr = document.createElement("tr");
+            tr.setAttribute("data-index", index);  // ★ 用 index，不是 rowId
+
+            tr.innerHTML = `
+                <td>${r.buyer}</td>
+                <td>${r.item}</td>
+                <td>${r.quantity}</td>
+                <td>${r.price}</td>
+                <td>
+                    <button class="editBtn">編輯</button>
+                    <button class="deleteBtn">刪除</button>
+                </td>
+            `;
+
+            table.appendChild(tr);
+        });
+
+        addEventListeners();
+    }
+
+    // 設定每一列的按鈕功能
+    function addEventListeners() {
+        document.querySelectorAll(".deleteBtn").forEach(btn => {
+            btn.addEventListener("click", async (e) => {
+                const tr = e.target.closest("tr");
+                const index = Number(tr.getAttribute("data-index")); // ★ index 數字
+
+                await apiDeleteRow(formId, index);
+                location.reload();
+            });
+        });
+
+        document.querySelectorAll(".editBtn").forEach(btn => {
+            btn.addEventListener("click", (e) => {
+                const tr = e.target.closest("tr");
+                startEditRow(tr);
+            });
+        });
+    }
+
+    // 列編輯模式
+    function startEditRow(tr) {
+        const tds = tr.querySelectorAll("td");
+
+        const buyer = tds[0].innerText;
+        const item = tds[1].innerText;
+        const qty = tds[2].innerText;
+        const price = tds[3].innerText;
+
+        tds[0].innerHTML = `<input value="${buyer}">`;
+        tds[1].innerHTML = `<input value="${item}">`;
+        tds[2].innerHTML = `<input type="number" value="${qty}">`;
+        tds[3].innerHTML = `<input type="number" value="${price}">`;
+
+        tds[4].innerHTML = `
+            <button class="saveBtn">完成</button>
+            <button class="cancelBtn">取消</button>
+        `;
+
+        tds[4].querySelector(".saveBtn").addEventListener("click", async () => {
+            const newBuyer = tds[0].querySelector("input").value;
+            const newItem = tds[1].querySelector("input").value;
+            const newQty = tds[2].querySelector("input").value;
+            const newPrice = tds[3].querySelector("input").value;
+
+            const index = Number(tr.getAttribute("data-index")); // ★ 正確 index
+
+            await apiUpdateRow(formId, index, newBuyer, newItem, newQty, newPrice);
+            location.reload();
+        });
+
+        tds[4].querySelector(".cancelBtn").addEventListener("click", () => {
+            location.reload();
+        });
+    }
+
+    // 新增
+    document.getElementById("addBtn").addEventListener("click", async () => {
+        await apiAddRow(formId, buyer.value, item.value, qty.value, price.value);
+        location.reload();
+    });
+
+    // 清空
+    document.getElementById("clearBtn").addEventListener("click", async () => {
+        await apiClearForm(formId);
+        location.reload();
+    });
+
+    loadForm();
+</script>
+
+</body>
+</html>
