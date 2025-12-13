@@ -14,7 +14,14 @@ app = Flask(__name__, static_folder="static", template_folder="templates")
 CORS(app)
 
 # MongoDB
-client = MongoClient("mongodb://localhost:27017/")
+MONGO_URI = os.environ.get("MONGO_URI")
+client = MongoClient(MONGO_URI)
+try:
+    client.admin.command("ping")
+    print("✅ MongoDB Atlas 連線成功")
+except Exception as e:
+    print("❌ MongoDB 連線失敗", e)
+
 db = client["datasys114"]
 users = db["users"]
 forms = db["forms"]
@@ -452,6 +459,5 @@ def api_delete_form():
     forms.delete_one({"_id": ObjectId(form_id)})
     return jsonify({"success": True})
 
-
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run()
